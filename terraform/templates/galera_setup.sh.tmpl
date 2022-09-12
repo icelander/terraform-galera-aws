@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# This script is run on the jumpbox to configure the DB hosts
+%{ for index, db in db_servers ~}
+ssh-keyscan ${db.private_ip} >> ~/.ssh/known_hosts
+
+# Copy install script
+scp ~/deploy/scripts/install_mariadb.sh ${db_user}@${db.private_ip}:~/install_mariadb.sh
+# Copy Galera Config
+scp ~/deploy/config/galera.${index}.cnf ${db_user}@${db.private_ip}:~/10-galera.cnf
+
+# Run the install script
+ssh ${db_user}@${db.private_ip} 'chmod +x ~/install_mariadb.sh; sudo ~/install_mariadb.sh'
+# Configure Galera
+ssh ${db_user}@${db.private_ip} 'sudo mv ~/10-galera.cnf /etc/my.cnf.d/10-galera.cnf'
+
+
+%{ if index == 0 ~}
+# If index is 0, create the cluster
+ssh ${db_user}@${db.private_ip} 'sudo galera_new_cluster'
+ssh ${db_user}@${db.private_ip} 'sudo mysql < /home/centos/deploy/sql/users.sql'
+ssh ${db_user}@${db.private_ip} 'sudo mysql world < /home/centos/deploy/sql/world.sql'
+%{ else ~}
+# Else, start MariaDB
+ssh ${db_user}@${db.private_ip} 'sudo systemctl start mariadb'
+%{ endif ~}
+
+%{ endfor ~}

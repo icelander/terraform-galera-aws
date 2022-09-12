@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# This script is run on your system to set up the jump box
+
+# Create deploy directory
+date=`date`
+echo "# $date" >> ~/.ssh/known_hosts
+ssh-keyscan ${bastion_ip} >> ~/.ssh/known_hosts
+
+# Rsync the deploy directory
+rsync -Pav -e "ssh -i ${ssh_key_path}" ./* rocky@${bastion_ip}:/home/rocky/deploy
+# Copy 
+ssh -i ${ssh_key_path} rocky@${bastion_ip} 'mv ~/deploy/ssh_config ~/.ssh/config'
+
+ssh -i ${ssh_key_path} rocky@${bastion_ip}

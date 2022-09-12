@@ -1,0 +1,10 @@
+Host bastion
+   User ${user}
+   IdentityFile ${ssh_key_path}
+   HostName ${bastion_ip}
+
+%{ for index, db in db_servers ~}
+Host galera${index}
+   User ${db_user}
+   HostName ${db.private_ip}
+%{ endfor ~}
